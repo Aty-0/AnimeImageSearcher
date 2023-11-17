@@ -8,6 +8,8 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
+            // testing some stuff
+            //"program": "${workspaceFolder}/src/test.py",
             "program": "${workspaceFolder}/src/main.py",
             "console": "integratedTerminal",
             "justMyCode": true

@@ -13,12 +13,11 @@ from datetime import datetime
 #       And send it to user 
 #       Grabing URL will be better
 
-from bing_image_downloader import downloader
-
+from icrawler.builtin import GoogleImageCrawler
 
 class botcore:
-    # TODO: need to grab it from os
-    TG_BOT_TOKEN = "6769523787:AAF9Ta5cvNwEPVwvGlmsBJ9aELukl3Nh0dE"
+    TG_BOT_TOKEN = os.getenv("AIS_TOKEN")
+
     states: dict[int, list] = { }
     STATE_START, STATE_SEARCH, STATE_EXIT = range(3)
     
@@ -136,30 +135,32 @@ class botcore:
         file: os.FileIO = None
         finalPath: str = ""
 
-        try:            
-            searchName = f"{randint(1, 1000)} Anime {self.search_request}"
-            logging.log(logging.INFO, f"{searchName}")
+        # FIXME: Hack {randint(1, 10000)} for random result  
+        searchName = f"{randint(1, 10000)} Anime {self.search_request}"
+        
+        logging.log(logging.INFO, f"{searchName}")
+        # TODO: So, how we need to get failed request 
 
-            # TODO: So, how we need to get failed request 
-            downloader.download(searchName , limit = 1,  output_dir=self.DATA_FOLDER_NAME, 
-                adult_filter_off=True, force_replace=False, timeout=60)
-
-            folderPath = f"{self.DATA_FOLDER_NAME}\\{searchName}"
-
-            if not os.path.isdir(folderPath):
-                logging.log(logging.ERROR, f"Folder is not exist with this path {folderPath}")
-                raise IOError
-            else:
-                logging.log(logging.INFO, "Folder found! Try to open next step...")
-
-            # for some reason this dumb downloader make subfolder with search name
-
-            finalPath = f"{folderPath}\\Image_1.jpg"
-            file = open(finalPath, 'rb')
-        except IOError:
+        crawler = GoogleImageCrawler(storage = {'root_dir': self.DATA_FOLDER_NAME})
+        crawler.crawl(keyword = searchName, overwrite=True, max_num = 1)
+        folderPath = f"{self.DATA_FOLDER_NAME}"
+        if not os.path.isdir(folderPath):
+            logging.log(logging.ERROR, f"Folder is not exist with this path {folderPath}")
             isRequestFailed = True
-            logging.log(logging.ERROR, "Failed to open image file...")
+        else:
+            logging.log(logging.INFO, "Folder found! Try to open next step...")
 
+        for format in {"png", "jpg"}:
+            try:            
+                finalPath = f"{folderPath}\\000001.{format}"
+                file = open(finalPath, 'rb')
+            except IOError:
+                logging.log(logging.ERROR, "Failed to open image file...")
+                file = None
+            finally:
+                break
+        
+        isRequestFailed = (file == None)
 
         if isRequestFailed == False:
             PIC_IS_FOUND_TEXT = "Картинка найдена!\nЖелаете ли вы ввести другой запрос или же искать другие с тем же запросом ?"
